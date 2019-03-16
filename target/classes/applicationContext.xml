@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd 
+	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd">
+
+	<!-- 包扫描 -->
+	<context:component-scan base-package="com.bt" />
+
+	<!--管理数据源 -->
+	<!--引入外部配置文件 -->
+	<context:property-placeholder location="classpath:/properties/*.properties" />
+
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${jdbcDriver}" />
+		<property name="jdbcUrl" value="${jdbcUrl}" />
+		<property name="user" value="${jdbcUser}" />
+		<property name="password" value="${jdbcPassword}" />
+	</bean>
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean" lazy-init="false">
+        <!-- 注入datasource，给sessionfactoryBean内setdatasource提供数据源 -->
+        <property name="dataSource" ref="dataSource" />
+        <property name="configLocation" value="classpath:hibernate.cfg.xml"></property>
+        <!-- //加载实体类的映射文件位置及名称 -->
+        <property name="mappingLocations" value="classpath:/mapper/userDao.hbm.xml"></property>
+    </bean> 
+
+	<!--配置事务策略 1.配置事务管理器 2.配置事务策略 增删改查 3.配置事务AOP切面 -->
+	<!--配置事务管理器 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		 <property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+
+	<!-- 配置事务事务属性 -->
+	<tx:advice id="txAdvice">
+		<tx:attributes>
+			<tx:method name="get" read-only="true"/>
+			<tx:method name="*"/>
+		</tx:attributes>
+	</tx:advice>
+
+	<aop:config>
+		<aop:pointcut expression="execution(* com.bt.sys.daoImpl.*.*(..))"
+			id="txPointcut" />
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="txPointcut" />
+	</aop:config>
+
+
+</beans>
